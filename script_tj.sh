@@ -1,7 +1,21 @@
-
 #!/bin/sh
-
-for competencia in 'Fazenda+P%FAblica' 'Acidentes+do+Trabalho' 'Viol%EAncia+Dom.+e+Fam.+Contra+a+Mulher' 'Auditoria+da+Justi%E7a+Militar' 'Criminal+-+Juri' 'Empresarial' 'Idoso' 'D%EDvida+Ativa+Federal' 'D%EDvida+Ativa+Estadual' 'D%EDvida+Ativa+Municipal' ''; do
-curl 'http://www4.tjrj.jus.br/consultaProcessoNome/ConsultaNome.do' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:62.0) Gecko/20100101 Firefox/62.0' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' -H 'Accept-Language: pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3' --compressed -H 'Referer: http://www4.tjrj.jus.br/ConsultaUnificada/consulta.do' -H 'Content-Type: application/x-www-form-urlencoded' -H 'Cookie: JSESSIONID=0afafa3830df3e119cf121c3468ba244c44e325dcc77.e34NbhiLbNuKbi0PbNePahyTbx10; www4=888863242.20480.0000' -H 'DNT: 1' -H 'Connection: keep-alive' -H 'Upgrade-Insecure-Requests: 1' --data 'acao=consulta&descOrigem=1%AA+Inst%E2ncia&descComarca=Todas+Comarcas&descCompetencia='$competencia'&novaTela=true&tipousuario=&idUsuSegWeb=&origem=1&tiposecinst=1&comarca=TODAS&competencia=10&anoInicio=1980&anoFinal=2018&dataInicio=&dataFim=30%2F09%2F2018&nomeParte="NOME+PESQUISADO' > $competencia'.html'
+rm -r over nada validos resultados.txt
+for nome in $(cat nomes.txt  | sed -e 's/ /+/g'); do
+for competencia in $(seq 12 && seq 16 18 && seq 21 23); do
+echo "Baixando" $nome "na 1a instância com o cod. de competência" $competencia
+curl 'http://www4.tjrj.jus.br/consultaProcessoNome/ConsultaNome.do' --data 'acao=consulta&descOrigem='$origem'&descComarca=Todas+Comarcas&descCompetencia='$competencia'&novaTela=true&tipousuario=&idUsuSegWeb=&origem='$origem'&tiposecinst=1&comarca=TODAS&competencia='$competencia'&anoInicio=1980&anoFinal=2018&dataInicio=&dataFim=21%2F03%2F2019&nomeParte="'$nome'"' > $nome'-instancia1-c'$competencia'.html'
+done
+for origem in $(seq 9); do
+echo "Baixando" $nome "com a origem" $origem
+curl 'http://www4.tjrj.jus.br/consultaProcessoNome/ConsultaNome.do' --data 'acao=consulta&descOrigem='$origem'&descComarca=Todas+Comarcas&novaTela=true&tipousuario=&idUsuSegWeb=&origem='$origem'&tiposecinst=1&comarca=TODAS&anoInicio=1980&anoFinal=2018&dataInicio=&dataFim=21%2F03%2F2020&nomeParte="'$nome'"' > $nome'-'$origem'.html'
+done
 done
 
+mkdir over nada validos
+find . -maxdepth 1 -name '*.html' -print0  | xargs -0r grep -Z -l "Nenhum" | xargs -0r mv -t "nada"
+find . -maxdepth 1 -name '*.html' -print0  | xargs -0r grep -Z -l "refine" | xargs -0r mv -t "over"
+mv *.html validos
+touch resultados.txt
+for arquivo in $(ls validos/*.html); do cat $arquivo | hxnormalize -x | hxselect 'table' | w3m -dump  -T 'text/html' >> resultados.txt
+done
+more resultados.txt
